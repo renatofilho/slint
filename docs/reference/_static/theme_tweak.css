@@ -3,7 +3,6 @@ html[data-theme="light"] {
         background-color: #fff;
         background-position: top center;
         background-repeat: no-repeat;
-        background-size: cover;
         color: #151D21;
     }
 }
@@ -14,7 +13,6 @@ html[data-theme="dark"] {
         background-image: url(https://slint.dev/assets/img/bg-dark.svg);
         background-position: top center;
         background-repeat: no-repeat;
-        background-size: cover;
         color: #fff;
     }
 
