@@ -2609,7 +2609,6 @@ fn compile_builtin_function_call(
                 quote!({
                     let popup_instance = #popup_window_id::new(#component_access_tokens.self_weak.get().unwrap().clone()).unwrap();
                     let popup_instance_vrc = sp::VRc::map(popup_instance.clone(), |x| x);
-                    #popup_window_id::user_init(popup_instance_vrc.clone());
                     let position = { let _self = popup_instance_vrc.as_pin_ref(); #position };
                     sp::WindowInner::from_pub(#window_adapter_tokens.window()).show_popup(
                         &sp::VRc::into_dyn(popup_instance.into()),
