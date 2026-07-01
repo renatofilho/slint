@@ -828,14 +828,27 @@ fn lower_repeated_component(
     let component = e.base_type.as_component().clone();
     let repeated = e.repeated.as_ref().unwrap();
 
+
     let sc = lower_sub_component(&component, ctx.state, Some(&ctx.inner), compiler_config);
 
     let listview = repeated.is_listview.as_ref().map(|lv| {
         let geom = component.root_element.borrow().geometry_props.clone().unwrap();
         ListViewInfo {
             viewport_y: ctx.map_property_reference(&lv.viewport_y),
-            viewport_height: ctx.map_property_reference(&lv.viewport_height),
-            viewport_width: ctx.map_property_reference(&lv.viewport_width),
+            viewport_height: (!lv
+                .viewport_height
+                .element()
+                .borrow()
+                .bindings
+                .contains_key(lv.viewport_height.name()))
+            .then(|| ctx.map_property_reference(&lv.viewport_height)),
+            viewport_width: (!lv
+                .viewport_width
+                .element()
+                .borrow()
+                .bindings
+                .contains_key(lv.viewport_width.name()))
+            .then(|| ctx.map_property_reference(&lv.viewport_width)),
             listview_height: ctx.map_property_reference(&lv.listview_height),
             listview_width: ctx.map_property_reference(&lv.listview_width),
             prop_y: sc.mapping.map_property_reference(&geom.y, ctx.state),

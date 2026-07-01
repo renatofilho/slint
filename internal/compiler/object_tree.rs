@@ -2014,8 +2014,9 @@ impl Element {
                 listview_width: NamedReference::new(parent, SmolStr::new_static("visible-width")),
             };
             // these properties are set by the ListView layouting code
-            lvi.viewport_height.mark_as_set();
-            lvi.viewport_width.mark_as_set();
+            //FIXME: RENATO
+            //lvi.viewport_height.mark_as_set();
+            //lvi.viewport_width.mark_as_set();
             geometry_props.y.mark_as_set();
             Some(lvi)
         } else {

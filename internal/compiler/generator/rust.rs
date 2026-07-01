@@ -1271,9 +1271,21 @@ fn generate_sub_component(
             });
             if let Some(listview) = &repeated.listview {
                 let vp_y = access_member(&listview.viewport_y, &ctx).unwrap();
-                let vp_h = access_member(&listview.viewport_height, &ctx).unwrap();
+
+                let vp_h = if let Some(lv_viewport_height) = &listview.viewport_height {
+                    let value = access_member(&lv_viewport_height, &ctx).unwrap();
+                    quote!(Some(#value))
+                } else {
+                    quote!(None)
+                };
                 let lv_h = access_member(&listview.listview_height, &ctx).unwrap();
-                let vp_w = access_member(&listview.viewport_width, &ctx).unwrap();
+
+                let vp_w = if let Some(lv_viewport_width) = &listview.viewport_width {
+                    let value = access_member(&lv_viewport_width, &ctx).unwrap();
+                    quote!(Some(#value))
+                } else {
+                    quote!(None)
+                };
                 let lv_w = access_member(&listview.listview_width, &ctx).unwrap();
 
                 repeated_visit_branch.push(quote!(

@@ -2448,9 +2448,17 @@ fn generate_sub_component(
 
         if let Some(listview) = &repeated.listview {
             let vp_y = access_member(&listview.viewport_y, &ctx).unwrap();
-            let vp_h = access_member(&listview.viewport_height, &ctx).unwrap();
+            let vp_h = if let Some(viewport_height) = &listview.viewport_height {
+                access_member(viewport_height, &ctx).unwrap()
+            } else {
+               "nullptr".to_string()
+            };
             let lv_h = access_member(&listview.listview_height, &ctx).unwrap();
-            let vp_w = access_member(&listview.viewport_width, &ctx).unwrap();
+            let vp_w = if let Some(viewport_width) = &listview.viewport_width {
+                access_member(viewport_width, &ctx).unwrap()
+            } else {
+                "nullptr".to_string()
+            };
             let lv_w = access_member(&listview.listview_width, &ctx).unwrap();
 
             children_visitor_cases.push(format!(

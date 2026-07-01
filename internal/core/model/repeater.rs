@@ -21,6 +21,7 @@ use core::pin::Pin;
 #[allow(unused)]
 use euclid::num::Floor;
 use pin_project::pin_project;
+use std::println;
 
 type ItemTreeRc<C> = vtable::VRc<crate::item_tree::ItemTreeVTable, C>;
 
@@ -158,12 +159,14 @@ fn update_all_instances(ops: &mut impl RepeaterInstanceOps, offset: usize, count
 /// This is the core virtualization algorithm: it estimates which model rows
 /// are visible, instantiates/updates those, lays them out, and cleans up
 /// off-screen instances. Returns whether any instance was created.
+///
+/// FIXME: viewport_width should be None if the ListView viewport-width was explicitly set, and in that case we should not update it here. Same for viewport_height
 fn update_visible_instances(
     ops: &mut impl RepeaterInstanceOps,
     state: &mut RepeaterLayoutState,
     row_count: usize,
-    viewport_width: Pin<&Property<LogicalLength>>,
-    viewport_height: Pin<&Property<LogicalLength>>,
+    viewport_width: Option<Pin<&Property<LogicalLength>>>,
+    viewport_height: Option<Pin<&Property<LogicalLength>>>,
     viewport_y: Pin<&Property<LogicalLength>>,
     listview_width: LogicalLength,
     listview_height: LogicalLength,
@@ -172,11 +175,17 @@ fn update_visible_instances(
     let mut vp_width = listview_width.get();
     let listview_height = listview_height.get();
 
+    println!(">>>>>>>>>>>>>>>>> viewport_width: {}", viewport_width.is_some());
+    println!(">>>>>>>>>>>>>>>>> viewport_height: {}", viewport_height.is_some());
     if row_count == 0 {
         ops.splice(0, ops.len(), 0);
-        viewport_height.set(zero);
+        if let Some(viewport_height) = viewport_height {
+            viewport_height.set(zero);
+        }
         viewport_y.set(zero);
-        viewport_width.set(listview_width);
+        if let Some(viewport_width) = viewport_width {
+            viewport_width.set(listview_width);
+        }
         return false;
     }
 
@@ -317,8 +326,12 @@ fn update_visible_instances(
         // Recompute coordinates for the scrollbar.
         state.cached_item_height = (y - new_offset_y) / ops.len() as Coord;
         state.anchor_y = state.cached_item_height * state.offset as Coord;
-        viewport_height.set(LogicalLength::new(state.cached_item_height * row_count as Coord));
-        viewport_width.set(LogicalLength::new(vp_width));
+        if let Some(viewport_height) = viewport_height {
+            viewport_height.set(LogicalLength::new(state.cached_item_height * row_count as Coord));
+        }
+        if let Some(viewport_width) = viewport_width {
+            viewport_width.set(LogicalLength::new(vp_width));
+        }
         let new_viewport_y = -state.anchor_y + new_offset_y;
         // Important: Use get_internal here, the viewport_y may have a binding on it (especially
         // a physical animation).
@@ -607,14 +620,19 @@ impl<C: RepeatedItemTree + 'static> Repeater<C> {
     /// [`Self::visit`], so this only covers the viewport geometry.
     pub fn track_changes_listview(
         self: Pin<&Self>,
-        viewport_width: Pin<&Property<LogicalLength>>,
-        viewport_height: Pin<&Property<LogicalLength>>,
+        viewport_width: Option<Pin<&Property<LogicalLength>>>,
+        viewport_height: Option<Pin<&Property<LogicalLength>>>,
         viewport_y: Pin<&Property<LogicalLength>>,
         listview_width: LogicalLength,
         listview_height: Pin<&Property<LogicalLength>>,
     ) {
-        viewport_width.register_as_dependency();
-        viewport_height.register_as_dependency();
+        if let Some(viewport_width) = viewport_width {
+            viewport_width.register_as_dependency();
+        }
+        if let Some(viewport_height) = viewport_height {
+            viewport_height.register_as_dependency();
+        }
+
         viewport_y.register_as_dependency();
         // listview_width is passed as a value, not a property, so it cannot
         // be registered as a dependency. Kept in the signature for symmetry
@@ -628,8 +646,8 @@ impl<C: RepeatedItemTree + 'static> Repeater<C> {
     pub fn ensure_updated_listview(
         self: Pin<&Self>,
         init: impl Fn() -> ItemTreeRc<C>,
-        viewport_width: Pin<&Property<LogicalLength>>,
-        viewport_height: Pin<&Property<LogicalLength>>,
+        viewport_width: Option<Pin<&Property<LogicalLength>>>,
+        viewport_height: Option<Pin<&Property<LogicalLength>>>,
         viewport_y: Pin<&Property<LogicalLength>>,
         listview_width: LogicalLength,
         listview_height: Pin<&Property<LogicalLength>>,
@@ -930,18 +948,21 @@ mod ffi {
         ops: &mut RepeaterInstanceOpsVTable,
         state: &mut RepeaterLayoutState,
         row_count: usize,
-        viewport_width: Pin<&Property<LogicalLength>>,
-        viewport_height: Pin<&Property<LogicalLength>>,
+        viewport_width: Option<&Property<LogicalLength>>,
+        viewport_height: Option<&Property<LogicalLength>>,
         viewport_y: Pin<&Property<LogicalLength>>,
         listview_width: LogicalLength,
         listview_height: LogicalLength,
     ) -> bool {
+        let viewport_width_opt = viewport_width.map(|r| unsafe { Pin::new_unchecked(r) });
+        let viewport_height_opt = viewport_height.map(|r| unsafe { Pin::new_unchecked(r) });
+
         update_visible_instances(
             ops,
             state,
             row_count,
-            viewport_width,
-            viewport_height,
+            viewport_width_opt,
+            viewport_height_opt,
             viewport_y,
             listview_width,
             listview_height,
